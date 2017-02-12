@@ -34,10 +34,12 @@ class KerasRPC(object):
 
 s = zerorpc.Server(KerasRPC())
 s.bind("tcp://0.0.0.0:4242")
-gevent.signal(signal.SIGTERM, s.stop)
-gevent.spawn(s.run)
+# gevent.signal(signal.SIGTERM, s.stop)
+thread = gevent.spawn(s.run)
+thread.join()
 # s.run()
 while True:
-  gevent.sleep(1)
+  gevent.sleep(1000)
+
 
 # print("zpc stopped"); sys.stdout.flush()

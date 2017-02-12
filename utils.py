@@ -9,13 +9,11 @@ from keras.layers import Dense
 from datetime import datetime
 import sys
 
-TRAINING_FILE = '/Users/ctsuser1/Documents/pr/ML/kbPattern Data/kb-RahulAware Labels.csv'
-TESTING_FILE = '/Users/ctsuser1/Documents/pr/ML/kbPattern Data/kb-RahulAware test with Labels.csv'
-
 MODEL_FILENAME = 'model.json'
 WEIGHTS_FILENAME = 'model.hdf5'
 INTERVALS_FILENAME = 'intervals.csv'
 STAT_FILENAME = 'stat.csv'
+USERS_FOLDER = 'users'
 
 # NOISE = '0.1'
 CLONESIZE = 40
@@ -43,8 +41,8 @@ def get_XY(file=None):
     return file_input, file_output, file_input_size
 
 def load_model(user):
-    userModelFileRel = user + '/' + MODEL_FILENAME
-    userWeightsFileRel = user + '/' + WEIGHTS_FILENAME
+    userModelFileRel = USERS_FOLDER + '/' + user + '/' + MODEL_FILENAME
+    userWeightsFileRel = USERS_FOLDER + '/' + user + '/' + WEIGHTS_FILENAME
     userModelFileAbs = get_filepathAbs(userModelFileRel)
     userWeightsFileAbs = get_filepathAbs(userWeightsFileRel)
 
@@ -53,8 +51,8 @@ def load_model(user):
     return model
 
 def save_model(model,user, newUser):
-    userModelFileRel = user + '/' + MODEL_FILENAME
-    userWeightsFileRel = user + '/' + WEIGHTS_FILENAME
+    userModelFileRel = USERS_FOLDER + '/' + user + '/' + MODEL_FILENAME
+    userWeightsFileRel = USERS_FOLDER + '/' + user + '/' + WEIGHTS_FILENAME
     userModelFileAbs = get_filepathAbs(userModelFileRel)
     userWeightsFileAbs = get_filepathAbs(userWeightsFileRel)
 
@@ -128,7 +126,7 @@ def testFromFile():
     print(classes)
 
 def saveIntervals(intervals,Y,user,newUser):
-    userIntervalsFileRel = user + '/' + INTERVALS_FILENAME
+    userIntervalsFileRel = USERS_FOLDER + '/' + user + '/' + INTERVALS_FILENAME
     userIntervalsFileAbs = get_filepathAbs(userIntervalsFileRel)
 
     i = json.loads(intervals)
@@ -185,7 +183,7 @@ def randomX0(intervals):
 
 def save_stat(user,intervals,Y,prob,newUser):
     # pass
-    userStatFileRel = user + '/' + STAT_FILENAME
+    userStatFileRel = USERS_FOLDER + '/' + user + '/' + STAT_FILENAME
     userStatFileAbs = get_filepathAbs(userStatFileRel)
 
     # json.JSONEncoder.default = lambda self, obj: (obj.isoformat() if isinstance(obj, datetime.datetime) else None)
@@ -217,7 +215,7 @@ def save_stat(user,intervals,Y,prob,newUser):
 
 def get_stat(user):
     # pass
-    userStatFileRel = user + '/' + STAT_FILENAME
+    userStatFileRel = USERS_FOLDER + '/' + user + '/' + STAT_FILENAME
     userStatFileAbs = get_filepathAbs(userStatFileRel)
 
     if os.path.exists(userStatFileAbs):

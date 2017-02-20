@@ -7,21 +7,25 @@ from keras.models import model_from_json
 from keras.models import Sequential
 from keras.layers import Dense
 from datetime import datetime
+from sklearn import preprocessing
+from sklearn.externals import joblib
 import sys
 
 MODEL_FILENAME = 'model.json'
 WEIGHTS_FILENAME = 'model.hdf5'
 INTERVALS_FILENAME = 'intervals.csv'
 STAT_FILENAME = 'stat.csv'
+SCALE_FILENAME = 'scale.pkl'
 USERS_FOLDER = 'users'
 
 # NOISE = '0.1'
-CLONESIZE = 40
-RANDOMYSIZE = 40
-RANDOMNOISE = 100
-CLONENOISE = 10
+CLONESIZE = 200
+RANDOMYSIZE = 200
+RANDOMNOISE = 200
+CLONENOISE = 50
 EPOCHS = 100
 BATCH = 10
+VALSPLIT = 0.33
 
 def get_filepathAbs(fileName):
     dir = os.path.dirname(__file__)
@@ -43,18 +47,25 @@ def get_XY(file=None):
 def load_model(user):
     userModelFileRel = USERS_FOLDER + '/' + user + '/' + MODEL_FILENAME
     userWeightsFileRel = USERS_FOLDER + '/' + user + '/' + WEIGHTS_FILENAME
+    userScaleFileRel = USERS_FOLDER + '/' + user + '/' + SCALE_FILENAME
     userModelFileAbs = get_filepathAbs(userModelFileRel)
     userWeightsFileAbs = get_filepathAbs(userWeightsFileRel)
+    userScaleFileAbs = get_filepathAbs(userScaleFileRel)
 
     model = model_from_json(open(userModelFileAbs).read())
     model.load_weights(userWeightsFileAbs)
-    return model
 
-def save_model(model,user, newUser):
+    scale = joblib.load(userScaleFileAbs)
+
+    return model, scale
+
+def save_model(model,scale,user,newUser):
     userModelFileRel = USERS_FOLDER + '/' + user + '/' + MODEL_FILENAME
     userWeightsFileRel = USERS_FOLDER + '/' + user + '/' + WEIGHTS_FILENAME
+    userScaleFileRel = USERS_FOLDER + '/' + user + '/' + SCALE_FILENAME
     userModelFileAbs = get_filepathAbs(userModelFileRel)
     userWeightsFileAbs = get_filepathAbs(userWeightsFileRel)
+    userScaleFileAbs = get_filepathAbs(userScaleFileRel)
 
     json_string = model.to_json()
     if newUser:
@@ -65,6 +76,9 @@ def save_model(model,user, newUser):
     else:
         open(userModelFileAbs, 'w').write(json_string)
         model.save_weights(userWeightsFileAbs, overwrite=True)
+
+    # save scale
+    joblib.dump(scale, userScaleFileAbs)
 
 def singleTrain(intervals,user,newUser):
     i = json.loads(intervals)
@@ -82,6 +96,10 @@ def singleTrain(intervals,user,newUser):
     X_Train = np.append(X_Train,X0_Train,axis=0)
     Y_Train = np.append(Y_Train, Y0_Train, axis=0)
 
+    # scale X_Train
+    scale = preprocessing.StandardScaler().fit(X_Train)
+    X_Train_scaled = scale.transform(X_Train)
+
     if newUser:
         #create new model
         model = Sequential()
@@ -95,23 +113,26 @@ def singleTrain(intervals,user,newUser):
     model.compile(loss='binary_crossentropy',
                   optimizer='adam', #'rmsprop',  # adam
                   metrics=['accuracy'])
-    history = model.fit(X_Train,Y_Train,batch_size=BATCH,nb_epoch=EPOCHS,verbose=False,shuffle=True)
+    history = model.fit(X_Train_scaled,Y_Train,validation_split=VALSPLIT,batch_size=BATCH,nb_epoch=EPOCHS,verbose=True,shuffle=True)
 
     #save the model
-    save_model(model,user,newUser)
+    save_model(model,scale,user,newUser)
 
 def singleTest(intervals,user):
-    i = json.loads(intervals)
-    array = np.array(i)
-    length = len(array)
-    X_test = np.reshape(array,(-1,length))
 
-    model = load_model(user)
+    model,scale = load_model(user)
+
+    i = json.loads(intervals)
+    X_test = np.array(i).reshape(1, -1)
+    X_test_scaled = scale.transform(X_test)
+    # print(X_test_scaled)
+    # length = len(array)
+    # X_test = np.reshape(array,(-1,length))
 
     try:
-        classes = model.predict_classes(X_test,batch_size=1,verbose=0)
-        prob = model.predict_proba(X_test,batch_size=1,verbose=0)
-        print(prob)
+        classes = model.predict_classes(X_test_scaled)
+        prob = model.predict_proba(X_test_scaled)
+        print(prob,classes)
         return classes, prob
 
     except ValueError:
@@ -119,11 +140,11 @@ def singleTest(intervals,user):
 
 
 
-def testFromFile():
-    model = load_model()
-    X_test, y_test, X_train_size = get_XY(TESTING_FILE)
-    classes = model.predict_classes(X_test, batch_size=32)
-    print(classes)
+# def testFromFile():
+#     model = load_model()
+#     X_test, y_test, X_train_size = get_XY(TESTING_FILE)
+#     classes = model.predict_classes(X_test, batch_size=32)
+#     print(classes)
 
 def saveIntervals(intervals,Y,user,newUser):
     userIntervalsFileRel = USERS_FOLDER + '/' + user + '/' + INTERVALS_FILENAME

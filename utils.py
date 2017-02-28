@@ -3,6 +3,7 @@ import pandas as pd
 import string
 import json
 import os
+import shutil
 from keras.models import model_from_json
 from keras.models import Sequential
 from keras.layers import Dense
@@ -247,3 +248,8 @@ def get_stat(user):
         data = []
         return data
 
+def deleteFolder(user):
+    userFolderRel = USERS_FOLDER + '/' + user
+    userFolderAbs = get_filepathAbs(userFolderRel)
+    if os.path.exists(userFolderAbs):
+        shutil.rmtree(userFolderAbs, ignore_errors=False, onerror=None)

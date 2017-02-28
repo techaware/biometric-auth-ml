@@ -11,7 +11,10 @@ class KerasRPC(object):
         newUser = m["newUser"]
 
         if newUser:
+            utils.deleteFolder(user)
             utils.singleTrain(intervals,user,newUser)
+            classes, prob = utils.singleTest(intervals,user)
+            utils.save_stat(user,intervals,classes[0],prob,newUser)
             returnMessage = "CREATED"
             Y = 1
         else:
